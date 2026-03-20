@@ -17,6 +17,11 @@ if [ -n "${INPUT_PROPERTIES_FILE}" ]; then
   OPTIONAL_PROPERTIES_FILE="-p ${INPUT_PROPERTIES_FILE}"
 fi
 
+CHECKSTYLE_CLASSPATH="/opt/lib/checkstyle.jar"
+if [ -n "${INPUT_CHECKSTYLE_CLASSPATH}" ]; then
+  CHECKSTYLE_CLASSPATH="${CHECKSTYLE_CLASSPATH}:${INPUT_CHECKSTYLE_CLASSPATH}"
+fi
+
 # user wants to use custom Checkstyle version, try to install it
 if [ -n "${INPUT_CHECKSTYLE_VERSION}" ]; then
   echo '::group::📥 Installing user-defined Checkstyle version ... https://github.com/checkstyle/checkstyle'
@@ -38,7 +43,11 @@ echo '::group:: Running Checkstyle with reviewdog 🐶 ...'
 { echo "Run check with"; java -jar /opt/lib/checkstyle.jar --version; } | sed ':a;N;s/\n/ /;ba'
 
 # shellcheck disable=SC2086
-exec java -jar /opt/lib/checkstyle.jar "${INPUT_WORKDIR}" -c "${INPUT_CHECKSTYLE_CONFIG}" ${OPTIONAL_PROPERTIES_FILE} -f xml \
+exec \
+  java \
+    -cp ${CHECKSTYLE_CLASSPATH} \
+    com.puppycrawl.tools.checkstyle.Main "${INPUT_WORKDIR}" \
+    -c "${INPUT_CHECKSTYLE_CONFIG}" ${OPTIONAL_PROPERTIES_FILE} -f xml \
   | reviewdog -f=checkstyle \
       -name="checkstyle" \
       -reporter="${INPUT_REPORTER:-github-pr-check}" \
